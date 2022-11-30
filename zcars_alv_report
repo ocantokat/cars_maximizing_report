@@ -1,0 +1,689 @@
+*&---------------------------------------------------------------------*
+*  Abap Ýsmi     : ZBCR_TEMPLATE                                       *
+*  Ýsim Açýklama : Rapor Þablonu                                       *
+*  Programcý     :                                                     *
+*  e-mail        :                                                     *
+*  Modül Ýlgilisi:                                                     *
+*  Tarih       	 :                                                     *
+*  Açýklama      :                                                     *
+*----------------------------------------------------------------------*
+*  Changes                                                             *
+*----------------------------------------------------------------------*
+*  Tarih      Kullanýcý      TalepNo.   Deðiþiklik Açýklamasý          *
+*----------------------------------------------------------------------*
+REPORT ztokatr_odev_1.
+
+*- Tables
+TABLES : ztokatt_arac,
+         ztokatt_bayi,
+         ztokatt_mtv ,
+         ztokatt_otv .
+
+
+*- Internal Tables
+DATA : gt_out TYPE TABLE OF ztokats_arac_alv,
+       gs_out TYPE          ztokats_arac_alv.
+
+*- Data
+DATA : gv_error TYPE c .
+
+*- Ranges
+
+
+*- ALV Data
+DATA : go_alv     TYPE REF TO zcl_bc_alv,
+       gs_variant TYPE        disvariant.
+
+
+*------------------------- INCLUDE ------------------------------------*
+INCLUDE <icon>.
+
+*------------------------- SELECTION-SCREEN ---------------------------*
+
+SELECTION-SCREEN BEGIN OF BLOCK b9 WITH FRAME TITLE TEXT-009.
+PARAMETERS : p_duzen LIKE disvariant-variant     .
+SELECTION-SCREEN END OF BLOCK b9.
+
+*------------------------ AT SELECTION-SCREEN -------------------------*
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_duzen.
+  PERFORM get_variant USING p_duzen 'F4'.
+
+*--------------------------- INITIALIZATION ---------------------------*
+INITIALIZATION.
+  PERFORM initialization .
+  PERFORM get_variant USING p_duzen ' '.
+
+*--------------------------- START PROGRAM ----------------------------*
+*- Start-Of-Selection
+START-OF-SELECTION.
+
+*- Verilerin Hazýrlanmasý
+  PERFORM get_prepare_data.
+
+*- Ana verilerin çekilmesi
+  PERFORM get_main_data   .
+
+*- Verilerin formatlarýnýn düzenlenmesi
+  PERFORM set_format_data .
+
+*- Verilerin Ekrana Yazdýrýlmasý
+  PERFORM set_write_data TABLES gt_out
+                          USING 'ZTOKATS_ARAC_ALV'
+                                '100'
+                                p_duzen.
+*- End-Of-Selection
+END-OF-SELECTION.
+*------------------------------- FORMS --------------------------------*
+*&---------------------------------------------------------------------*
+*& Form INITIALIZATION
+*&---------------------------------------------------------------------*
+*& Rapor Giriþ Verileri
+*&---------------------------------------------------------------------*
+FORM initialization .
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Module  PBO_100  OUTPUT
+*&---------------------------------------------------------------------*
+*       Ekran Menü Ayarlarý
+*----------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+
+  SET PF-STATUS 'ALV'.
+  SET TITLEBAR  'ALV'.
+
+ENDMODULE.                 " PBO_100  OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       Ekran Buton Düzenlemeleri
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'BACK' OR '%EX' .
+      SET SCREEN 0 .
+    WHEN 'RW'.
+      LEAVE PROGRAM .
+    WHEN OTHERS.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Form SET_WRITE_DATA
+*&---------------------------------------------------------------------*
+*& ALV ile ekrana yazýlmasý
+*&---------------------------------------------------------------------*
+FORM set_write_data TABLES pt_out
+                     USING pv_structure TYPE tabname
+                           pv_screen    TYPE sy-dynnr
+                           pv_duzen     TYPE disvariant-variant.
+  CHECK gv_error IS INITIAL .
+
+  gs_variant-variant  = pv_duzen.
+
+  go_alv = NEW zcl_bc_alv( iv_repid   = sy-repid
+                           iv_dynnr   = pv_screen
+                           is_variant = gs_variant ).
+
+  go_alv->create_alv_grid( iv_extension       = 500
+                           iv_structure_name  = pv_structure ).
+*FIELD-SYMBOLS : <gt_out2> TYPE ANY TABLE.
+*FIELD-SYMBOLS : <ls_out> TYPE ANY TABLE.
+* go_alv->create_dynamic_table( EXPORTING      it_fieldcat = go_alv->gt_fieldcat
+*                               IMPORTING      es_out =  DATA(ls_out)
+*                                      et_out =  DATA(lt_out) ).
+*- Çýktý Yapýsý Deðiþiklikleri
+  go_alv->gs_layout-info_fname = 'LINE_COLOR'.
+*  go_alv->gs_layout-stylefname = 'CELLTAB'.
+*  go_alv->gs_layout-no_rowmove = 'X'.
+*  go_alv->gs_layout-no_rowmark = 'X'.
+*  go_alv->gs_layout-no_rowins  = 'X'.
+*  go_alv->gs_layout-no_toolbar = 'X'.
+*  go_alv->show_all_toolbar_functions( ).
+  go_alv->gs_layout-zebra = 'X'.
+*- Menü Deðiþiklikleri
+*  LOOP AT go_alv->gt_exclude ASSIGNING FIELD-SYMBOL(<fs_exclude>).
+*  ENDLOOP.
+
+*- Rapor Alanlarý deðiþiklikleri
+  PERFORM modify_fieldcat.
+
+*- Alv Yazdýrýlmasý
+  go_alv->display_alv( CHANGING it_outtab  = pt_out[] ).
+
+  CALL SCREEN pv_screen.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_DATA_CHANGED
+*&---------------------------------------------------------------------*
+*& ALV Data Deðiþikliði
+*&---------------------------------------------------------------------*
+FORM event_data_changed
+      CHANGING er_data_changed  TYPE REF TO cl_alv_changed_data_protocol
+               e_onf4	          TYPE char01
+               e_onf4_before    TYPE char01
+               e_onf4_after     TYPE char01
+               e_ucomm          TYPE sy-ucomm.
+
+  DATA: ls_modi TYPE lvc_s_modi.
+  DATA: lv_decimal TYPE p DECIMALS 2.
+
+  LOOP AT er_data_changed->mt_good_cells INTO ls_modi.
+    READ TABLE gt_out INTO gs_out INDEX ls_modi-row_id.
+    IF sy-subrc EQ 0.
+      TRANSLATE ls_modi-value USING ', '.
+      CONDENSE  ls_modi-value NO-GAPS.
+      CLEAR lv_decimal.
+      lv_decimal = lv_decimal + ls_modi-value.
+      gs_out-bkaroran    = lv_decimal.
+      gs_out-bkartutar   =   gs_out-fasatis * ( lv_decimal ).
+      gs_out-otvtutar    = ( gs_out-fasatis + gs_out-bkartutar ) * gs_out-otvoran.
+      gs_out-kdvtutar    = ( gs_out-fasatis + gs_out-bkartutar + gs_out-mtvtutar + gs_out-otvtutar ) * gs_out-kdvoran.
+      gs_out-msatisfiyat =   gs_out-fasatis + gs_out-bkartutar + gs_out-mtvtutar + gs_out-otvtutar + gs_out-kdvtutar.
+      MODIFY gt_out FROM gs_out INDEX ls_modi-row_id.
+      PERFORM color_line.
+      PERFORM re_satis.
+    ENDIF.
+  ENDLOOP.
+
+  go_alv->refresh_table_display( ).
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_DATA_CHANGED_FINISHED
+*&---------------------------------------------------------------------*
+*& ALV Data Deðiþikliði Sonrasý
+*&---------------------------------------------------------------------*
+FORM event_data_changed_finished CHANGING e_modified    TYPE char01
+                                          et_good_cells	TYPE lvc_t_modi.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_DOUBLE_CLICK
+*&---------------------------------------------------------------------*
+*& Çift Týklama
+*&---------------------------------------------------------------------*
+FORM event_double_click CHANGING  e_row     TYPE lvc_s_row
+                                  e_column  TYPE lvc_s_col
+                                  es_row_no TYPE lvc_s_roid.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_HOTSPOT_CLICK
+*&---------------------------------------------------------------------*
+*& Hotspot Týklama
+*&---------------------------------------------------------------------*
+FORM event_hotspot_click CHANGING e_row     TYPE lvc_s_row
+                                  e_column  TYPE lvc_s_col
+                                  es_row_no TYPE lvc_s_roid.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_TOOLBAR
+*&---------------------------------------------------------------------*
+*& Menüye Buton Ekleme
+*&---------------------------------------------------------------------*
+FORM event_toolbar
+             CHANGING e_object      TYPE REF TO cl_alv_event_toolbar_set
+                      e_interactive TYPE  char01.
+
+  CALL METHOD go_alv->add_button
+    EXPORTING
+      iv_function = 'ROLL'
+      iv_icon     = icon_relationship
+      iv_text     = 'Aþaðý Yuvarla'
+    CHANGING
+      cv_object   = e_object.
+
+  CALL METHOD go_alv->add_button
+    EXPORTING
+      iv_function = 'MAX_KAR'
+      iv_icon     = icon_color
+      iv_text     = 'Maksimum Karlýlýk'
+    CHANGING
+      cv_object   = e_object.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EVENT_USER_COMMAND
+*&---------------------------------------------------------------------*
+*& Toolbar Buton Düzenlemeleri
+*&---------------------------------------------------------------------*
+FORM event_user_command CHANGING cv_ucomm.
+
+  CASE cv_ucomm.
+    WHEN 'ROLL' .
+      PERFORM roll_data .
+    WHEN 'MAX_KAR' .
+      PERFORM maximizing_data .
+
+  ENDCASE.
+  go_alv->refresh_table_display( ).
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_VARIANT
+*&---------------------------------------------------------------------*
+*& Rapor Düzeni
+*&---------------------------------------------------------------------*
+FORM get_variant  USING pv_duzen
+                        pv_islem.
+
+  CASE pv_islem.
+    WHEN 'F4'.
+*- Düzenlerin Arama Yardýmý
+      CALL METHOD zcl_bc_alv=>variant_f4
+        EXPORTING
+          iv_report  = sy-repid
+        IMPORTING
+          es_variant = gs_variant
+        CHANGING
+          cv_variant = pv_duzen.
+    WHEN ' '.
+*- Varsayýlan Düzen
+      CALL METHOD zcl_bc_alv=>variant_default_get
+        EXPORTING
+          iv_report  = sy-repid
+        IMPORTING
+          es_variant = gs_variant
+        CHANGING
+          cv_variant = pv_duzen.
+    WHEN OTHERS.
+  ENDCASE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_PREPARE_PROGRAM
+*&---------------------------------------------------------------------*
+*& Veri Çekimleri Öncesi Düzenleme ve Kontroller
+*&---------------------------------------------------------------------*
+FORM get_prepare_data .
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_MAIN_DATA
+*&---------------------------------------------------------------------*
+*& Ana Verilerin Çekilmesi
+*&---------------------------------------------------------------------*
+FORM get_main_data .
+
+  CHECK gv_error IS INITIAL .
+
+  SELECT ar~modelkodu,
+         ar~modeladi,
+         ar~mhacim,
+         ar~fiyat AS fasatis,
+         ar~birim,
+         ba~bayikodu,
+         ba~bayiad,
+         ba~karorani AS bkaroran
+          FROM ztokatt_arac AS ar
+            CROSS JOIN ztokatt_bayi AS ba
+            INTO CORRESPONDING FIELDS OF TABLE @gt_out.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FORMAT_DATA
+*&---------------------------------------------------------------------*
+*& Format düzenleme ve karþýlaþtýrmalar
+*&---------------------------------------------------------------------*
+FORM set_format_data .
+
+  SELECT *
+    INTO TABLE @DATA(lt_mtv)
+    FROM ztokatt_mtv.
+
+  SELECT ztokatt_otv~hacimalt,
+         ztokatt_otv~hacimust,
+         ztokatt_otv~fiyatalt,
+         ztokatt_otv~fiyatust,
+         ztokatt_otv~otvoran
+    INTO TABLE @DATA(lt_otv)
+    FROM ztokatt_otv.
+
+  LOOP AT gt_out ASSIGNING FIELD-SYMBOL(<ls_out>).
+    <ls_out>-kdvoran = '0.18'.
+    <ls_out>-bkartutar = <ls_out>-fasatis * ( <ls_out>-bkaroran / 100 ).
+    <ls_out>-bkaroran  = <ls_out>-bkaroran  / 100.
+    LOOP AT lt_mtv INTO DATA(ls_mtv) WHERE malt LE <ls_out>-mhacim
+                                       AND must GT <ls_out>-mhacim.
+      EXIT.
+    ENDLOOP.
+
+    IF sy-subrc EQ 0.
+      <ls_out>-mtvtutar = ls_mtv-mfiyat.
+    ENDIF.
+
+    LOOP AT lt_otv INTO DATA(ls_otv) WHERE hacimalt LE <ls_out>-mhacim
+                                       AND hacimust GE <ls_out>-mhacim
+                                       AND fiyatalt LE <ls_out>-fasatis
+                                       AND fiyatust GE <ls_out>-fasatis.
+      EXIT.
+    ENDLOOP.
+
+    IF sy-subrc EQ 0.
+      <ls_out>-otvoran  = ls_otv-otvoran / 100.
+      <ls_out>-otvtutar =  ( <ls_out>-fasatis + <ls_out>-bkartutar ) * <ls_out>-otvoran.
+    ENDIF.
+    <ls_out>-kdvtutar = ( <ls_out>-fasatis + <ls_out>-bkartutar + <ls_out>-mtvtutar + <ls_out>-otvtutar ) * <ls_out>-kdvoran.
+    <ls_out>-msatisfiyat = <ls_out>-fasatis + <ls_out>-bkartutar + <ls_out>-mtvtutar + <ls_out>-otvtutar + <ls_out>-kdvtutar.
+    IF <ls_out>-msatisfiyat GT 1000000.
+      <ls_out>-satisadet = 10.
+    ELSEIF <ls_out>-msatisfiyat GT 750000 AND <ls_out>-msatisfiyat LT 1000000.
+      <ls_out>-satisadet = 25.
+    ELSEIF <ls_out>-msatisfiyat GT 500000 AND <ls_out>-msatisfiyat LT 750000.
+      <ls_out>-satisadet = 40.
+    ELSE.
+      <ls_out>-satisadet = 60.
+    ENDIF.
+  ENDLOOP.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form Modify Fieldcat
+*&---------------------------------------------------------------------*
+*& Alan Kataloðunu Modifiye Eder
+*&---------------------------------------------------------------------*
+FORM modify_fieldcat.
+
+
+  PERFORM color_line.
+
+*- Rapor Alanlarý deðiþiklikleri
+  LOOP AT go_alv->gt_fieldcat ASSIGNING FIELD-SYMBOL(<fs_fieldcat>).
+    CASE <fs_fieldcat>-fieldname.
+      WHEN 'MODELKODU'.
+        <fs_fieldcat>-coltext = 'Model Kodu'.
+      WHEN 'MODELADI'.
+        <fs_fieldcat>-key = 'Model Adý'.
+      WHEN 'MHACIM'.
+        <fs_fieldcat>-key = 'Motor Hacmi'.
+        <fs_fieldcat>-no_out = abap_true.
+      WHEN 'BAYIKODU'.
+        <fs_fieldcat>-key = 'Bayi Kodu'.
+      WHEN 'BAYIAD'.
+        <fs_fieldcat>-key = 'Bayi Adý'.
+      WHEN 'FASATIS'.
+        <fs_fieldcat>-coltext = 'Satýþ Tutarý'.
+      WHEN 'BKARORAN'.
+        <fs_fieldcat>-coltext = 'Bayi Kar Oraný'.
+        <fs_fieldcat>-edit    = abap_true.
+      WHEN 'BKARTUTAR'.
+        <fs_fieldcat>-coltext = 'Bayi Karý'.
+      WHEN 'MTVTUTAR'.
+        <fs_fieldcat>-coltext = 'MTV Tutarý'.
+      WHEN 'OTVORAN'.
+        <fs_fieldcat>-coltext = 'ÖTV Oraný'.
+      WHEN 'OTVTUTAR'.
+        <fs_fieldcat>-coltext = 'ÖTV Tutarý'.
+      WHEN 'KDVORAN'.
+        <fs_fieldcat>-coltext = 'KDV Oraný'.
+      WHEN 'KDVTUTAR'.
+        <fs_fieldcat>-coltext = 'KDV Tutarý'.
+      WHEN 'SATISADET'.
+        <fs_fieldcat>-coltext = 'Satýþ Adeti'.
+      WHEN 'MSATISFIYAT'.
+        <fs_fieldcat>-coltext = 'Müþteri Satýþ Fiyatý'.
+      WHEN 'BIRIM'.
+        <fs_fieldcat>-coltext = 'Para Birimi'.
+    ENDCASE.
+
+  ENDLOOP.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form Handle Button Click
+*&---------------------------------------------------------------------*
+*& ALV grid içine koyulan butona týklandýðýnda buraya düþer
+*&---------------------------------------------------------------------*
+FORM handle_button_click USING is_col_id TYPE lvc_s_col
+                               is_row_no TYPE lvc_s_roid.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form COLOR_LINE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM color_line .
+  LOOP AT gt_out ASSIGNING FIELD-SYMBOL(<ls_out>).
+    IF <ls_out>-msatisfiyat GT 1000000.
+      <ls_out>-line_color = 'C610'.
+    ELSEIF <ls_out>-msatisfiyat LT 1000000
+       AND <ls_out>-msatisfiyat GT 750000.
+      <ls_out>-line_color = 'C710'.
+    ELSEIF <ls_out>-msatisfiyat GT 500000
+       AND <ls_out>-msatisfiyat LT 750000.
+      <ls_out>-line_color = 'C310'.
+    ELSE.
+      <ls_out>-line_color = 'C510'.
+    ENDIF.
+  ENDLOOP.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ROLL_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM roll_data .
+  LOOP AT gt_out ASSIGNING FIELD-SYMBOL(<ls_out>).
+    "ARALIKLARI KONTROL EDÝP FÝYAT DÜÞÜRME
+    IF <ls_out>-msatisfiyat GT 1000000.
+      WHILE <ls_out>-msatisfiyat GT 1000000.
+        IF <ls_out>-bkaroran < '0.01'.
+          EXIT.
+        ENDIF.
+        <ls_out>-bkaroran    = <ls_out>-bkaroran - '0.01'.
+        <ls_out>-bkartutar   = <ls_out>-fasatis * <ls_out>-bkaroran.
+        <ls_out>-otvtutar    = ( <ls_out>-fasatis + <ls_out>-bkartutar ) * <ls_out>-otvoran.
+        <ls_out>-kdvtutar    = ( <ls_out>-fasatis + <ls_out>-bkartutar + <ls_out>-mtvtutar + <ls_out>-otvtutar ) * <ls_out>-kdvoran.
+        <ls_out>-msatisfiyat =   <ls_out>-fasatis + <ls_out>-bkartutar + <ls_out>-mtvtutar + <ls_out>-otvtutar + <ls_out>-kdvtutar.
+      ENDWHILE.
+    ELSEIF <ls_out>-msatisfiyat GT 750000 AND <ls_out>-msatisfiyat LT 1000000.
+      WHILE <ls_out>-msatisfiyat GT 750000.
+        IF <ls_out>-bkaroran < '0.01'.
+          EXIT.
+        ENDIF.
+        <ls_out>-bkaroran    = <ls_out>-bkaroran - '0.01'.
+        <ls_out>-bkartutar   = <ls_out>-fasatis * <ls_out>-bkaroran.
+        <ls_out>-otvtutar    = ( <ls_out>-fasatis + <ls_out>-bkartutar ) * <ls_out>-otvoran.
+        <ls_out>-kdvtutar    = ( <ls_out>-fasatis + <ls_out>-bkartutar + <ls_out>-mtvtutar + <ls_out>-otvtutar ) * <ls_out>-kdvoran.
+        <ls_out>-msatisfiyat =   <ls_out>-fasatis + <ls_out>-bkartutar + <ls_out>-mtvtutar + <ls_out>-otvtutar + <ls_out>-kdvtutar.
+      ENDWHILE.
+    ELSEIF <ls_out>-msatisfiyat GT 500000 AND <ls_out>-msatisfiyat LT 750000.
+      WHILE <ls_out>-msatisfiyat GT 500000.
+        IF <ls_out>-bkaroran < '0.01'.
+          EXIT.
+        ENDIF.
+        <ls_out>-bkaroran    = <ls_out>-bkaroran - '0.01'.
+        <ls_out>-bkartutar   = <ls_out>-fasatis * <ls_out>-bkaroran.
+        <ls_out>-otvtutar    = ( <ls_out>-fasatis + <ls_out>-bkartutar ) * <ls_out>-otvoran.
+        <ls_out>-kdvtutar    = ( <ls_out>-fasatis + <ls_out>-bkartutar + <ls_out>-mtvtutar + <ls_out>-otvtutar ) * <ls_out>-kdvoran.
+        <ls_out>-msatisfiyat =   <ls_out>-fasatis + <ls_out>-bkartutar + <ls_out>-mtvtutar + <ls_out>-otvtutar + <ls_out>-kdvtutar.
+      ENDWHILE.
+    ENDIF.
+
+  ENDLOOP.
+  PERFORM color_line.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form RE_WRITE_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM re_write_data USING p_data.
+
+  LOOP AT gt_out ASSIGNING FIELD-SYMBOL(<fs_out>) WHERE bayikodu EQ p_data.
+    IF <fs_out>-msatisfiyat GT 1000000.
+      <fs_out>-satisadet = 10.
+    ELSEIF <fs_out>-msatisfiyat GT 750000 AND <fs_out>-msatisfiyat LT 1000000.
+      <fs_out>-satisadet = 25.
+    ELSEIF <fs_out>-msatisfiyat GT 500000 AND <fs_out>-msatisfiyat LT 750000.
+      <fs_out>-satisadet = 40.
+    ELSE.
+      <fs_out>-satisadet = 60.
+    ENDIF.
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MAXIMIZING_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM maximizing_data .
+
+**  DATA: lv_temp_tutar TYPE i,
+**        lv_temp_oran  TYPE p DECIMALS 2,
+**        lv_max_oran   TYPE p DECIMALS 2,
+**        lv_g_oran     TYPE p DECIMALS 2.
+**
+**  DATA: lv_max_tutar TYPE i.
+**  DATA: lv_decimal TYPE p DECIMALS 2.
+
+  LOOP AT gt_out INTO gs_out.
+    IF gs_out-bayikodu EQ '100001'.
+      PERFORM max_data USING '100001'.
+
+    ELSEIF gs_out-bayikodu EQ '100002'.
+      PERFORM max_data USING '100002'.
+
+    ELSEIF gs_out-bayikodu EQ '100003'.
+      PERFORM max_data USING '100003'.
+
+    ELSEIF gs_out-bayikodu EQ '100005'.
+      PERFORM max_data USING '100005'.
+
+    ELSE.
+      PERFORM max_data USING '100006'.
+**      lv_decimal = '0.70'.
+**      WHILE lv_decimal > '0.01'.
+**        lv_temp_oran = lv_decimal.
+**        lv_max_oran  = lv_temp_oran.
+**        LOOP AT gt_out ASSIGNING FIELD-SYMBOL(<fs_kar>) WHERE bayikodu EQ '100002'.
+**          <fs_kar>-bkaroran    = lv_max_oran.
+**          <fs_kar>-bkartutar   = <fs_kar>-fasatis * <fs_kar>-bkaroran.
+**          <fs_kar>-otvtutar    = ( <fs_kar>-fasatis + <fs_kar>-bkartutar ) * <fs_kar>-otvoran.
+**          <fs_kar>-kdvtutar    = ( <fs_kar>-fasatis + <fs_kar>-bkartutar + <fs_kar>-mtvtutar + <fs_kar>-otvtutar ) * <fs_kar>-kdvoran.
+**          <fs_kar>-msatisfiyat =   <fs_kar>-fasatis + <fs_kar>-bkartutar + <fs_kar>-mtvtutar + <fs_kar>-otvtutar + <fs_kar>-kdvtutar.
+**        ENDLOOP.
+**
+**        PERFORM re_write_data USING '100002'.
+**        LOOP AT gt_out INTO DATA(ls_out) WHERE bayikodu EQ '100002'.
+**          lv_temp_tutar = lv_temp_tutar + ( ls_out-bkartutar * ls_out-satisadet ).
+**        ENDLOOP.
+**
+**        IF lv_max_tutar < lv_temp_tutar.
+**          lv_max_tutar      = lv_temp_tutar.
+**          lv_g_oran         = lv_temp_oran.
+**        ENDIF.
+**
+**        lv_decimal = lv_decimal - '0.01'.
+**        CLEAR lv_temp_tutar.
+**      ENDWHILE.
+**      LOOP AT gt_out ASSIGNING FIELD-SYMBOL(<fs_gkar>) WHERE bayikodu EQ '100002'.
+**        <fs_gkar>-bkaroran    = lv_g_oran.
+**      ENDLOOP.
+**
+**     ELSE.
+**       CLEAR: lv_temp_tutar,
+**             lv_temp_oran ,
+**             lv_max_oran  ,
+**             lv_g_oran    .
+         ENDIF.
+    ENDLOOP.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form RE_SATIS
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM re_satis .
+
+  LOOP AT gt_out ASSIGNING FIELD-SYMBOL(<ls_out>).
+    IF <ls_out>-msatisfiyat GT 1000000.
+      <ls_out>-satisadet = 10.
+    ELSEIF <ls_out>-msatisfiyat GT 750000 AND <ls_out>-msatisfiyat LT 1000000.
+      <ls_out>-satisadet = 25.
+    ELSEIF <ls_out>-msatisfiyat GT 500000 AND <ls_out>-msatisfiyat LT 750000.
+      <ls_out>-satisadet = 40.
+    ELSE.
+      <ls_out>-satisadet = 60.
+    ENDIF.
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MAX_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM max_data USING p_bayi.
+
+  DATA: lv_temp_tutar TYPE i,
+        lv_temp_oran  TYPE p DECIMALS 2,
+        lv_max_oran   TYPE p DECIMALS 2,
+        lv_g_oran     TYPE p DECIMALS 2.
+
+  DATA: lv_max_tutar TYPE i.
+  DATA: lv_decimal TYPE p DECIMALS 2.
+
+ CLEAR: lv_temp_tutar,
+        lv_temp_oran ,
+        lv_max_oran  ,
+        lv_g_oran    .
+
+  lv_decimal = '0.70'.
+  WHILE lv_decimal > '0.01'.
+    lv_temp_oran = lv_decimal.
+    lv_max_oran  = lv_temp_oran.
+    LOOP AT gt_out ASSIGNING FIELD-SYMBOL(<fs_kar>) WHERE bayikodu EQ p_bayi.
+      <fs_kar>-bkaroran    = lv_max_oran.
+      <fs_kar>-bkartutar   = <fs_kar>-fasatis * <fs_kar>-bkaroran.
+      <fs_kar>-otvtutar    = ( <fs_kar>-fasatis + <fs_kar>-bkartutar ) * <fs_kar>-otvoran.
+      <fs_kar>-kdvtutar    = ( <fs_kar>-fasatis + <fs_kar>-bkartutar + <fs_kar>-mtvtutar + <fs_kar>-otvtutar ) * <fs_kar>-kdvoran.
+      <fs_kar>-msatisfiyat =   <fs_kar>-fasatis + <fs_kar>-bkartutar + <fs_kar>-mtvtutar + <fs_kar>-otvtutar + <fs_kar>-kdvtutar.
+    ENDLOOP.
+
+    PERFORM re_write_data USING p_bayi.
+    LOOP AT gt_out INTO DATA(ls_out) WHERE bayikodu EQ p_bayi.
+      lv_temp_tutar = lv_temp_tutar + ( ls_out-bkartutar * ls_out-satisadet ).
+    ENDLOOP.
+
+    IF lv_max_tutar < lv_temp_tutar.
+      lv_max_tutar      = lv_temp_tutar.
+      lv_g_oran         = lv_temp_oran.
+    ENDIF.
+
+    lv_decimal = lv_decimal - '0.01'.
+    CLEAR lv_temp_tutar.
+  ENDWHILE.
+  LOOP AT gt_out ASSIGNING FIELD-SYMBOL(<fs_gkar>) WHERE bayikodu EQ p_bayi.
+    <fs_gkar>-bkaroran    = lv_g_oran.
+  ENDLOOP.
+
+
+
+
+
+ENDFORM.
