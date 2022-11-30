@@ -1,16 +1,3 @@
-*&---------------------------------------------------------------------*
-*  Abap ›smi     : ZBCR_TEMPLATE                                       *
-*  ›sim AÁ˝klama : Rapor ﬁablonu                                       *
-*  Programc˝     :                                                     *
-*  e-mail        :                                                     *
-*  Mod¸l ›lgilisi:                                                     *
-*  Tarih       	 :                                                     *
-*  AÁ˝klama      :                                                     *
-*----------------------------------------------------------------------*
-*  Changes                                                             *
-*----------------------------------------------------------------------*
-*  Tarih      Kullan˝c˝      TalepNo.   Dei˛iklik AÁ˝klamas˝          *
-*----------------------------------------------------------------------*
 REPORT ztokatr_odev_1.
 
 *- Tables
@@ -57,16 +44,16 @@ INITIALIZATION.
 *- Start-Of-Selection
 START-OF-SELECTION.
 
-*- Verilerin Haz˝rlanmas˝
+*- Verilerin Haz√Ωrlanmas√Ω
   PERFORM get_prepare_data.
 
-*- Ana verilerin Áekilmesi
+*- Ana verilerin √ßekilmesi
   PERFORM get_main_data   .
 
-*- Verilerin formatlar˝n˝n d¸zenlenmesi
+*- Verilerin formatlar√Ωn√Ωn d√ºzenlenmesi
   PERFORM set_format_data .
 
-*- Verilerin Ekrana Yazd˝r˝lmas˝
+*- Verilerin Ekrana Yazd√Ωr√Ωlmas√Ω
   PERFORM set_write_data TABLES gt_out
                           USING 'ZTOKATS_ARAC_ALV'
                                 '100'
@@ -77,7 +64,7 @@ END-OF-SELECTION.
 *&---------------------------------------------------------------------*
 *& Form INITIALIZATION
 *&---------------------------------------------------------------------*
-*& Rapor Giri˛ Verileri
+*& Rapor Giri√æ Verileri
 *&---------------------------------------------------------------------*
 FORM initialization .
 
@@ -85,7 +72,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *&      Module  PBO_100  OUTPUT
 *&---------------------------------------------------------------------*
-*       Ekran Men¸ Ayarlar˝
+*       Ekran Men√º Ayarlar√Ω
 *----------------------------------------------------------------------*
 MODULE status_0100 OUTPUT.
 
@@ -96,7 +83,7 @@ ENDMODULE.                 " PBO_100  OUTPUT
 *&---------------------------------------------------------------------*
 *&      Module  USER_COMMAND_0100  INPUT
 *&---------------------------------------------------------------------*
-*       Ekran Buton D¸zenlemeleri
+*       Ekran Buton D√ºzenlemeleri
 *----------------------------------------------------------------------*
 MODULE user_command_0100 INPUT.
   CASE sy-ucomm.
@@ -110,7 +97,7 @@ ENDMODULE.
 *&---------------------------------------------------------------------*
 *& Form SET_WRITE_DATA
 *&---------------------------------------------------------------------*
-*& ALV ile ekrana yaz˝lmas˝
+*& ALV ile ekrana yaz√Ωlmas√Ω
 *&---------------------------------------------------------------------*
 FORM set_write_data TABLES pt_out
                      USING pv_structure TYPE tabname
@@ -131,7 +118,7 @@ FORM set_write_data TABLES pt_out
 * go_alv->create_dynamic_table( EXPORTING      it_fieldcat = go_alv->gt_fieldcat
 *                               IMPORTING      es_out =  DATA(ls_out)
 *                                      et_out =  DATA(lt_out) ).
-*- «˝kt˝ Yap˝s˝ Dei˛iklikleri
+*- √á√Ωkt√Ω Yap√Ωs√Ω De√∞i√æiklikleri
   go_alv->gs_layout-info_fname = 'LINE_COLOR'.
 *  go_alv->gs_layout-stylefname = 'CELLTAB'.
 *  go_alv->gs_layout-no_rowmove = 'X'.
@@ -140,14 +127,14 @@ FORM set_write_data TABLES pt_out
 *  go_alv->gs_layout-no_toolbar = 'X'.
 *  go_alv->show_all_toolbar_functions( ).
   go_alv->gs_layout-zebra = 'X'.
-*- Men¸ Dei˛iklikleri
+*- Men√º De√∞i√æiklikleri
 *  LOOP AT go_alv->gt_exclude ASSIGNING FIELD-SYMBOL(<fs_exclude>).
 *  ENDLOOP.
 
-*- Rapor Alanlar˝ dei˛iklikleri
+*- Rapor Alanlar√Ω de√∞i√æiklikleri
   PERFORM modify_fieldcat.
 
-*- Alv Yazd˝r˝lmas˝
+*- Alv Yazd√Ωr√Ωlmas√Ω
   go_alv->display_alv( CHANGING it_outtab  = pt_out[] ).
 
   CALL SCREEN pv_screen.
@@ -156,7 +143,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *& Form EVENT_DATA_CHANGED
 *&---------------------------------------------------------------------*
-*& ALV Data Dei˛iklii
+*& ALV Data De√∞i√æikli√∞i
 *&---------------------------------------------------------------------*
 FORM event_data_changed
       CHANGING er_data_changed  TYPE REF TO cl_alv_changed_data_protocol
@@ -191,7 +178,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *& Form EVENT_DATA_CHANGED_FINISHED
 *&---------------------------------------------------------------------*
-*& ALV Data Dei˛iklii Sonras˝
+*& ALV Data De√∞i√æikli√∞i Sonras√Ω
 *&---------------------------------------------------------------------*
 FORM event_data_changed_finished CHANGING e_modified    TYPE char01
                                           et_good_cells	TYPE lvc_t_modi.
@@ -200,7 +187,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *& Form EVENT_DOUBLE_CLICK
 *&---------------------------------------------------------------------*
-*& «ift T˝klama
+*& √áift T√Ωklama
 *&---------------------------------------------------------------------*
 FORM event_double_click CHANGING  e_row     TYPE lvc_s_row
                                   e_column  TYPE lvc_s_col
@@ -211,7 +198,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *& Form EVENT_HOTSPOT_CLICK
 *&---------------------------------------------------------------------*
-*& Hotspot T˝klama
+*& Hotspot T√Ωklama
 *&---------------------------------------------------------------------*
 FORM event_hotspot_click CHANGING e_row     TYPE lvc_s_row
                                   e_column  TYPE lvc_s_col
@@ -221,7 +208,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *& Form EVENT_TOOLBAR
 *&---------------------------------------------------------------------*
-*& Men¸ye Buton Ekleme
+*& Men√ºye Buton Ekleme
 *&---------------------------------------------------------------------*
 FORM event_toolbar
              CHANGING e_object      TYPE REF TO cl_alv_event_toolbar_set
@@ -231,7 +218,7 @@ FORM event_toolbar
     EXPORTING
       iv_function = 'ROLL'
       iv_icon     = icon_relationship
-      iv_text     = 'A˛a˝ Yuvarla'
+      iv_text     = 'A√æa√∞√Ω Yuvarla'
     CHANGING
       cv_object   = e_object.
 
@@ -239,7 +226,7 @@ FORM event_toolbar
     EXPORTING
       iv_function = 'MAX_KAR'
       iv_icon     = icon_color
-      iv_text     = 'Maksimum Karl˝l˝k'
+      iv_text     = 'Maksimum Karl√Ωl√Ωk'
     CHANGING
       cv_object   = e_object.
 
@@ -247,7 +234,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *& Form EVENT_USER_COMMAND
 *&---------------------------------------------------------------------*
-*& Toolbar Buton D¸zenlemeleri
+*& Toolbar Buton D√ºzenlemeleri
 *&---------------------------------------------------------------------*
 FORM event_user_command CHANGING cv_ucomm.
 
@@ -263,14 +250,14 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *& Form GET_VARIANT
 *&---------------------------------------------------------------------*
-*& Rapor D¸zeni
+*& Rapor D√ºzeni
 *&---------------------------------------------------------------------*
 FORM get_variant  USING pv_duzen
                         pv_islem.
 
   CASE pv_islem.
     WHEN 'F4'.
-*- D¸zenlerin Arama Yard˝m˝
+*- D√ºzenlerin Arama Yard√Ωm√Ω
       CALL METHOD zcl_bc_alv=>variant_f4
         EXPORTING
           iv_report  = sy-repid
@@ -279,7 +266,7 @@ FORM get_variant  USING pv_duzen
         CHANGING
           cv_variant = pv_duzen.
     WHEN ' '.
-*- Varsay˝lan D¸zen
+*- Varsay√Ωlan D√ºzen
       CALL METHOD zcl_bc_alv=>variant_default_get
         EXPORTING
           iv_report  = sy-repid
@@ -294,7 +281,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *& Form GET_PREPARE_PROGRAM
 *&---------------------------------------------------------------------*
-*& Veri «ekimleri ÷ncesi D¸zenleme ve Kontroller
+*& Veri √áekimleri √ñncesi D√ºzenleme ve Kontroller
 *&---------------------------------------------------------------------*
 FORM get_prepare_data .
 
@@ -302,7 +289,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *& Form GET_MAIN_DATA
 *&---------------------------------------------------------------------*
-*& Ana Verilerin «ekilmesi
+*& Ana Verilerin √áekilmesi
 *&---------------------------------------------------------------------*
 FORM get_main_data .
 
@@ -324,7 +311,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *& Form SET_FORMAT_DATA
 *&---------------------------------------------------------------------*
-*& Format d¸zenleme ve kar˛˝la˛t˝rmalar
+*& Format d√ºzenleme ve kar√æ√Ωla√æt√Ωrmalar
 *&---------------------------------------------------------------------*
 FORM set_format_data .
 
@@ -382,48 +369,48 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *& Form Modify Fieldcat
 *&---------------------------------------------------------------------*
-*& Alan Katalounu Modifiye Eder
+*& Alan Katalo√∞unu Modifiye Eder
 *&---------------------------------------------------------------------*
 FORM modify_fieldcat.
 
 
   PERFORM color_line.
 
-*- Rapor Alanlar˝ dei˛iklikleri
+*- Rapor Alanlar√Ω de√∞i√æiklikleri
   LOOP AT go_alv->gt_fieldcat ASSIGNING FIELD-SYMBOL(<fs_fieldcat>).
     CASE <fs_fieldcat>-fieldname.
       WHEN 'MODELKODU'.
         <fs_fieldcat>-coltext = 'Model Kodu'.
       WHEN 'MODELADI'.
-        <fs_fieldcat>-key = 'Model Ad˝'.
+        <fs_fieldcat>-key = 'Model Ad√Ω'.
       WHEN 'MHACIM'.
         <fs_fieldcat>-key = 'Motor Hacmi'.
         <fs_fieldcat>-no_out = abap_true.
       WHEN 'BAYIKODU'.
         <fs_fieldcat>-key = 'Bayi Kodu'.
       WHEN 'BAYIAD'.
-        <fs_fieldcat>-key = 'Bayi Ad˝'.
+        <fs_fieldcat>-key = 'Bayi Ad√Ω'.
       WHEN 'FASATIS'.
-        <fs_fieldcat>-coltext = 'Sat˝˛ Tutar˝'.
+        <fs_fieldcat>-coltext = 'Sat√Ω√æ Tutar√Ω'.
       WHEN 'BKARORAN'.
-        <fs_fieldcat>-coltext = 'Bayi Kar Oran˝'.
+        <fs_fieldcat>-coltext = 'Bayi Kar Oran√Ω'.
         <fs_fieldcat>-edit    = abap_true.
       WHEN 'BKARTUTAR'.
-        <fs_fieldcat>-coltext = 'Bayi Kar˝'.
+        <fs_fieldcat>-coltext = 'Bayi Kar√Ω'.
       WHEN 'MTVTUTAR'.
-        <fs_fieldcat>-coltext = 'MTV Tutar˝'.
+        <fs_fieldcat>-coltext = 'MTV Tutar√Ω'.
       WHEN 'OTVORAN'.
-        <fs_fieldcat>-coltext = '÷TV Oran˝'.
+        <fs_fieldcat>-coltext = '√ñTV Oran√Ω'.
       WHEN 'OTVTUTAR'.
-        <fs_fieldcat>-coltext = '÷TV Tutar˝'.
+        <fs_fieldcat>-coltext = '√ñTV Tutar√Ω'.
       WHEN 'KDVORAN'.
-        <fs_fieldcat>-coltext = 'KDV Oran˝'.
+        <fs_fieldcat>-coltext = 'KDV Oran√Ω'.
       WHEN 'KDVTUTAR'.
-        <fs_fieldcat>-coltext = 'KDV Tutar˝'.
+        <fs_fieldcat>-coltext = 'KDV Tutar√Ω'.
       WHEN 'SATISADET'.
-        <fs_fieldcat>-coltext = 'Sat˝˛ Adeti'.
+        <fs_fieldcat>-coltext = 'Sat√Ω√æ Adeti'.
       WHEN 'MSATISFIYAT'.
-        <fs_fieldcat>-coltext = 'M¸˛teri Sat˝˛ Fiyat˝'.
+        <fs_fieldcat>-coltext = 'M√º√æteri Sat√Ω√æ Fiyat√Ω'.
       WHEN 'BIRIM'.
         <fs_fieldcat>-coltext = 'Para Birimi'.
     ENDCASE.
@@ -435,7 +422,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 *& Form Handle Button Click
 *&---------------------------------------------------------------------*
-*& ALV grid iÁine koyulan butona t˝kland˝˝nda buraya d¸˛er
+*& ALV grid i√ßine koyulan butona t√Ωkland√Ω√∞√Ωnda buraya d√º√æer
 *&---------------------------------------------------------------------*
 FORM handle_button_click USING is_col_id TYPE lvc_s_col
                                is_row_no TYPE lvc_s_roid.
@@ -473,7 +460,7 @@ ENDFORM.
 *&---------------------------------------------------------------------*
 FORM roll_data .
   LOOP AT gt_out ASSIGNING FIELD-SYMBOL(<ls_out>).
-    "ARALIKLARI KONTROL ED›P F›YAT D‹ﬁ‹RME
+    "ARALIKLARI KONTROL ED√ùP F√ùYAT D√ú√û√úRME
     IF <ls_out>-msatisfiyat GT 1000000.
       WHILE <ls_out>-msatisfiyat GT 1000000.
         IF <ls_out>-bkaroran < '0.01'.
